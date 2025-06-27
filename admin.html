@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - الرادود حيدر الأعرجي</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Cairo', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00e5ff;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+    input {
+      background-color: #1e1e1e;
+      color: white;
+    }
+    button {
+      background-color: #00e5ff;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .video-list {
+      margin-top: 40px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .video-item {
+      background: #222;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .video-item span {
+      flex: 1;
+    }
+    .video-item button {
+      background-color: red;
+      color: white;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>لوحة التحكم</h1>
+  <form id="addVideoForm">
+    <input type="text" id="videoTitle" placeholder="اسم الفيديو" required>
+    <input type="text" id="videoID" placeholder="معرّف فيديو يوتيوب" required>
+    <button type="submit">➕ إضافة الفيديو</button>
+  </form>
+
+  <div class="video-list" id="videoList">
+    <h2>الفيديوهات المضافة:</h2>
+    <div id="videosContainer"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDhy_dFBxrFWh6nnHVIuj9ZJMXbO-7tyo",
+      authDomain: "karbala-media.firebaseapp.com",
+      databaseURL: "https://karbala-media-default-rtdb.firebaseio.com/",
+      projectId: "karbala-media",
+      storageBucket: "karbala-media.firebasestorage.app",
+      messagingSenderId: "300288625638",
+      appId: "1:300288625638:web:23d51f7603738640ebe427"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const videosRef = db.ref("videos");
+
+    const addVideoForm = document.getElementById("addVideoForm");
+    const videoTitle = document.getElementById("videoTitle");
+    const videoID = document.getElementById("videoID");
+    const videosContainer = document.getElementById("videosContainer");
+
+    addVideoForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const title = videoTitle.value.trim();
+      const id = videoID.value.trim();
+      if (!title || !id) return;
+      videosRef.push({ title, id });
+      addVideoForm.reset();
+    });
+
+    function loadVideos() {
+      videosRef.on("value", (snapshot) => {
+        videosContainer.innerHTML = "";
+        snapshot.forEach((child) => {
+          const key = child.key;
+          const data = child.val();
+          const div = document.createElement("div");
+          div.className = "video-item";
+          div.innerHTML = `<span>${data.title}</span>
+                           <button onclick="deleteVideo('${key}')">🗑 حذف</button>`;
+          videosContainer.appendChild(div);
+        });
+      });
+    }
+
+    function deleteVideo(key) {
+      if (confirm("هل أنت متأكد من حذف الفيديو؟")) {
+        db.ref("videos/" + key).remove();
+      }
+    }
+
+    loadVideos();
+  </script>
+</body>
+</html>

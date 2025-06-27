@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>الرادود حيدر الأعرجي</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Cairo', sans-serif;
+      background: url('https://e.top4top.io/p_346555t379.png') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .title {
+      font-weight: 900;
+      font-size: 20px;
+      color: white;
+      text-align: center;
+      padding: 12px 0 0 0;
+      user-select: none;
+      text-shadow: 0 0 5px black;
+    }
+    .video-player {
+      width: 100%;
+      height: 30vh;
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      padding: 10px 15px;
+      overflow: hidden;
+    }
+    .channel-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+    .channel-card {
+      background-image: url('https://f.top4top.io/p_3465dqws80.png');
+      background-size: cover;
+      background-position: center;
+      width: calc(100% - 30px);
+      margin: 10px auto;
+      height: 70px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      text-shadow: 0 0 8px black;
+      transition: color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .channel-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 12px #00e5ff88;
+      color: #00e5ff;
+    }
+    .channel-card.active {
+      color: yellow !important;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="title">الرادود حيدر الأعرجي</div>
+  <div class="video-player">
+    <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
+  </div>
+  <div class="main-content">
+    <div class="channel-list" id="episodeList"></div>
+  </div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDhy_dFBxrFWh6nnHVIuj9ZJMXbO-7tyo",
+      authDomain: "karbala-media.firebaseapp.com",
+      databaseURL: "https://karbala-media-default-rtdb.firebaseio.com/",
+      projectId: "karbala-media",
+      storageBucket: "karbala-media.firebasestorage.app",
+      messagingSenderId: "300288625638",
+      appId: "1:300288625638:web:23d51f7603738640ebe427"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const videosRef = db.ref('videos');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const episodeList = document.getElementById('episodeList');
+    function createVideoCard(video) {
+      const card = document.createElement('div');
+      card.classList.add('channel-card');
+      card.dataset.src = `https://www.youtube.com/embed/${video.id}`;
+      card.textContent = video.title;
+      card.addEventListener('click', () => {
+        videoPlayer.src = card.dataset.src;
+        document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+      episodeList.appendChild(card);
+    }
+    videosRef.on('value', snapshot => {
+      episodeList.innerHTML = '';
+      snapshot.forEach(child => {
+        createVideoCard(child.val());
+      });
+    });
+  </script>
+</body>
+</html>

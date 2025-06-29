@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>لوحة تحكم كربلاء ميديا</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      margin: 0;
+      padding: 20px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-weight: 900;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 0;
+      width: 100%;
+      background-color: #00e5ff;
+      border: none;
+      border-radius: 6px;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .list-container {
+      margin-top: 25px;
+      max-height: 250px;
+      overflow-y: auto;
+      background-color: #222;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .list-item {
+      padding: 8px;
+      border-bottom: 1px solid #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .list-item:last-child {
+      border-bottom: none;
+    }
+    .list-item button {
+      background-color: #f33;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>لوحة تحكم كربلاء ميديا</h2>
+
+  <section>
+    <h3>إدارة الأقسام</h3>
+    <form id="sectionForm">
+      <label>اسم القسم</label>
+      <input type="text" id="sectionName" required />
+      <button type="submit">إضافة قسم</button>
+    </form>
+    <div class="list-container" id="sectionsList">جارٍ تحميل الأقسام...</div>
+  </section>
+
+  <hr style="margin: 30px 0; border-color: #333;">
+
+  <section>
+    <h3>إدارة القنوات</h3>
+    <form id="channelForm">
+      <label>اسم القناة</label>
+      <input type="text" id="channelName" required />
+      <label>معرف يوتيوب (video ID)</label>
+      <input type="text" id="channelUrl" required placeholder="مثال: dQw4w9WgXcQ" />
+      <label>القسم</label>
+      <select id="channelSection" required></select>
+      <button type="submit">إضافة قناة</button>
+    </form>
+    <div class="list-container" id="channelsList">جارٍ تحميل القنوات...</div>
+  </section>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDhy_dFBxrFWh6nnHVIuj9ZJMXbO-7tyo",
+    authDomain: "karbala-media.firebaseapp.com",
+    databaseURL: "https://karbala-media-default-rtdb.firebaseio.com/",
+    projectId: "karbala-media",
+    storageBucket: "karbala-media.firebasestorage.app",
+    messagingSenderId: "300288625638",
+    appId: "1:300288625638:web:23d51f7603738640ebe427"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const sectionForm = document.getElementById('sectionForm');
+  const channelForm = document.getElementById('channelForm');
+
+  const sectionsList = document.getElementById('sectionsList');
+  const channelsList = document.getElementById('channelsList');
+  const channelSection = document.getElementById('channelSection');
+
+  // تحميل الأقسام وإظهارها في القائمة والقائمة المنسدلة
+  function loadSections() {
+    db.ref('sections').on('value', snapshot => {
+      const sections = snapshot.val() || {};
+      sectionsList.innerHTML = '';
+      channelSection.innerHTML = '<option value="" disabled selected>اختر القسم</option>';
+      Object.entries(sections).forEach(([key, section]) => {
+        // عرض في قائمة الأقسام مع زر حذف
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <span>${section.name}</span>
+          <button onclick="deleteSection('${key}')">حذف</button>
+        `;
+        sectionsList.appendChild(div);
+
+        // إضافة خيار للقائمة المنسدلة في إضافة قناة
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = section.name;
+        channelSection.appendChild(option);
+      });
+    });
+  }
+
+  // تحميل القنوات وإظهارها مع زر حذف
+  function loadChannels() {
+    db.ref('channels').on('value', snapshot => {
+      const channels = snapshot.val() || {};
+      channelsList.innerHTML = '';
+      Object.entries(channels).forEach(([key, channel]) => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <span>${channel.name} (القسم: ${channel.categoryName || 'غير معروف'})</span>
+          <button onclick="deleteChannel('${key}')">حذف</button>
+        `;
+        channelsList.appendChild(div);
+      });
+    });
+  }
+
+  // إضافة قسم جديد
+  sectionForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('sectionName').value.trim();
+    if (!name) return alert('يرجى إدخال اسم القسم');
+
+    db.ref('sections').push({ name }).then(() => {
+      sectionForm.reset();
+    }).catch(err => alert('خطأ في الإضافة: ' + err));
+  });
+
+  // إضافة قناة جديدة
+  channelForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('channelName').value.trim();
+    const url = document.getElementById('channelUrl').value.trim();
+    const category = channelSection.value;
+
+    if (!name || !url || !category) {
+      return alert('يرجى تعبئة جميع الحقول');
+    }
+
+    // للحصول على اسم القسم (لاظهاره في قائمة القنوات)
+    const categorySnapshot = await db.ref('sections/' + category).once('value');
+    const categoryName = categorySnapshot.val()?.name || '';
+
+    db.ref('channels').push({ name, url, category, categoryName }).then(() => {
+      channelForm.reset();
+    }).catch(err => alert('خطأ في الإضافة: ' + err));
+  });
+
+  // حذف قسم مع حذف القنوات التابعة له
+  function deleteSection(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا القسم؟ سيتم حذف جميع القنوات التابعة له!')) return;
+    db.ref('sections/' + id).remove()
+    .then(() => {
+      // حذف القنوات التابعة
+      db.ref('channels').orderByChild('category').equalTo(id).once('value').then(snapshot => {
+        snapshot.forEach(child => {
+          db.ref('channels/' + child.key).remove();
+        });
+      });
+    });
+  }
+
+  // حذف قناة
+  function deleteChannel(id) {
+    if (!confirm('هل أنت متأكد من حذف هذه القناة؟')) return;
+    db.ref('channels/' + id).remove();
+  }
+
+  // تهيئة التحميل
+  loadSections();
+  loadChannels();
+</script>
+</body>
+</html>
